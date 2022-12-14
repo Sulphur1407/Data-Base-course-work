@@ -9,7 +9,7 @@ months = ("січень", "лютий", "березень", "квітень", "�
 years = (2020, 2021, 2022, 2023)
 
 
-class DataBase():
+class DataBase:
     def __init__(self):
         self.__mydb = mysql.connector.connect(
             host="localhost",
@@ -17,7 +17,7 @@ class DataBase():
             passwd="abunaraze",
             database="db_sol"
         )
-        self.mycursor = self.mydb.cursor()
+        self.mycursor = self.__mydb.cursor()
 
     def get_sizes(self):
         self.mycursor.execute("SELECT DISTINCT size FROM Shoes_variant ORDER BY size")
@@ -45,7 +45,8 @@ class DataBase():
 
 
 class MainApplication(tk.Frame):
-    def __init__(self, parent, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        parent = tk.Tk()
         tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
 
@@ -53,7 +54,7 @@ class MainApplication(tk.Frame):
 
         window = self.parent
         window.title("Курсова робота")
-        window.geometry("1425x840")
+        window.geometry("1425x940")
 
         tabControl = ttk.Notebook(window)
         self.tab1 = ttk.Frame(tabControl)
@@ -84,8 +85,80 @@ class MainApplication(tk.Frame):
         sizes = self.db.get_sizes()
         fashions = self.db.get_fashions()
 
+        self.create_table1()
+
+
+        #   TAB2
+        ttk.Label(self.tab2, text="Дані про брак за:").place(x=20, y=20)
+
+        self.tab2_com_month = ttk.Combobox(self.tab2, values=months)
+        self.tab2_com_month.place(x=130, y=20)
+
+        self.tab2_com_year = ttk.Combobox(self.tab2, values=years)
+        self.tab2_com_year.place(x=290, y=20)
+
+        self.tab2_get_data_button = ttk.Button(self.tab2, text="Отримати дані", command=self.tab2_get_data)
+        self.tab2_get_data_button.place(x=450, y=18)
+
+        self.tab2_put_data_button = ttk.Button(self.tab2, text="Завантажити дані", command=self.tab2_put_data)
+        self.tab2_put_data_button.place(x=555, y=18)
+
+        self.create_table2()
+
+
+        #   TAB3
+        ttk.Label(self.tab3, text="Дані про брак за:").place(x=20, y=20)
+        self.tab3_com_month = ttk.Combobox(self.tab3, values=months)
+        self.tab3_com_month.place(x=130, y=20)
+        self.tab3_com_year = ttk.Combobox(self.tab3, values=years)
+        self.tab3_com_year.place(x=290, y=20)
+        self.tab3_get_data_button = ttk.Button(self.tab3, text="Отримати звіт", command=self.tab3_get_report)
+        self.tab3_get_data_button.place(x=450, y=18)
+
+        self.create_table3()
+
+
+
+        #  TAB4
+        self.create_frame4()
+
+
+        window.mainloop()
+
+    def refresh(self):
+        for child in self.tab1_table_frame.winfo_children():
+            child.destroy()
+        self.create_table1()
+
+        for child in self.tab2_table_frame.winfo_children():
+            child.destroy()
+        self.create_table2()
+
+        for child in self.tab3_table_frame.winfo_children():
+            child.destroy()
+        self.create_table3()
+
+        for child in self.tab4.winfo_children():
+            child.destroy()
+        self.create_frame4()
+
+    def clear_table(self):
+        sizes = self.db.get_sizes()
+        fashions = self.db.get_fashions()
+
+        for i in range(len(fashions)):
+            for j in range(len(sizes)):
+                self.tab1_table[i][j].delete(0, 100)
+                self.tab2_table[i][j].delete(0, 100)
+                self.tab3_table[i][j].config(text="")
+
+    def create_table1(self):
+        sizes = self.db.get_sizes()
+        fashions = self.db.get_fashions()
+
         #  Фрейм для таблиці
         tab1_table = tk.Frame(self.tab1)
+        self.tab1_table_frame = tab1_table
         tab1_table.pack
         tab1_table.place(x=0, y=50)
 
@@ -107,24 +180,14 @@ class MainApplication(tk.Frame):
             if i:
                 self.tab1_table.append(cols)
 
-        #   TAB2
-        ttk.Label(self.tab2, text="Дані про брак за:").place(x=20, y=20)
-
-        self.tab2_com_month = ttk.Combobox(self.tab2, values=months)
-        self.tab2_com_month.place(x=130, y=20)
-
-        self.tab2_com_year = ttk.Combobox(self.tab2, values=years)
-        self.tab2_com_year.place(x=290, y=20)
-
-        self.tab2_get_data_button = ttk.Button(self.tab2, text="Отримати дані", command=self.tab2_get_data)
-        self.tab2_get_data_button.place(x=450, y=18)
-
-        self.tab2_put_data_button = ttk.Button(self.tab2, text="Завантажити дані", command=self.tab2_put_data)
-        self.tab2_put_data_button.place(x=555, y=18)
+    def create_table2(self):
+        sizes = self.db.get_sizes()
+        fashions = self.db.get_fashions()
 
         #  Фрейм для таблиці
         tab2_table = tk.Frame(self.tab2)
         tab2_table.pack
+        self.tab2_table_frame = tab2_table
         tab2_table.place(x=0, y=50)
 
         # Table:
@@ -145,17 +208,14 @@ class MainApplication(tk.Frame):
             if i:
                 self.tab2_table.append(cols)
 
-        #   TAB3
-        ttk.Label(self.tab3, text="Дані про брак за:").place(x=20, y=20)
-        self.tab3_com_month = ttk.Combobox(self.tab3, values=months)
-        self.tab3_com_month.place(x=130, y=20)
-        self.tab3_com_year = ttk.Combobox(self.tab3, values=years)
-        self.tab3_com_year.place(x=290, y=20)
-        self.tab3_get_data_button = ttk.Button(self.tab3, text="Отримати звіт", command=self.tab3_get_report)
-        self.tab3_get_data_button.place(x=450, y=18)
+    def create_table3(self):
+        sizes = self.db.get_sizes()
+        fashions = self.db.get_fashions()
+
         #  Фрейм для таблиці
         tab3_table = tk.Frame(self.tab3)
         tab3_table.pack
+        self.tab3_table_frame = tab3_table
         tab3_table.place(x=0, y=50)
         # Table:
         self.tab3_table = []
@@ -175,6 +235,9 @@ class MainApplication(tk.Frame):
             if i:
                 self.tab3_table.append(cols)
 
+    def create_frame4(self):
+        fashions = self.db.get_fashions()
+
         #  TAB4
         ttk.Label(self.tab4, text="Додати фасон:").place(x=20, y=20)
         self.tab4_entry_fashion_add = tk.Entry(self.tab4, relief=tk.RIDGE, width=23)
@@ -183,26 +246,13 @@ class MainApplication(tk.Frame):
         self.tab4_button_fashion_add.place(x=290, y=18)
 
         ttk.Label(self.tab4, text="Видалити фасон:").place(x=20, y=60)
-        self.tab4_com_fashion = ttk.Combobox(self.tab4, values=years)
+        self.tab4_com_fashion = ttk.Combobox(self.tab4, values=fashions)
         self.tab4_com_fashion.place(x=140, y=60)
         self.tab4_get_data_button = ttk.Button(self.tab4, text="Видалити фасон", command=self.tab4_delete_fashion)
         self.tab4_get_data_button.place(x=290, y=58)
 
-    def refresh(self):
-        self.weight_entry.delete(0, "end")
-        self.text.delete("1.0", "end")
-
-    def clear_table(self):
-        sizes = self.db.get_sizes()
-        fashions = self.db.get_fashions()
-
-        for i in range(len(fashions)):
-            for j in range(len(sizes)):
-                self.tab1_table[i][j].delete(0, 100)
-                self.tab2_table[i][j].delete(0, 100)
-                self.tab3_table[i][j].config(text="")
-
     def tab1_get_data(self):
+
 
         if not self.tab1_com_month.get():
             messagebox.showerror("Помилка!", "Ви не вказали місяць!")
@@ -523,14 +573,29 @@ class MainApplication(tk.Frame):
             self.db.mycursor.execute(AddFashion, (fashion, i))
 
         self.db.mydb.commit()
+        messagebox.showinfo("", f"Фасон {fashion} було успішно додано!")
 
         self.refresh()
 
     def tab4_delete_fashion(self):
-        pass
+        if not self.tab4_com_fashion.get():
+            messagebox.showerror("Помилка!", "Ви не вказали модель для видалення!")
+            return None
+
+        fashion = self.tab4_com_fashion.get()
+
+        DeleteFashion = """DELETE FROM shoes_variant
+                           where fashion = %s
+        """
+        try:
+            self.db.mycursor.execute(DeleteFashion, (fashion,))
+            self.db.mydb.commit()
+            self.refresh()
+        except mysql.connector.errors.IntegrityError:
+            messagebox.showerror("Помилка!", "Неможливо видалити фасон, до якого є записи!")
+            return None
 
 
 if __name__ == "__main__":
-    window = tk.Tk()
-    MainApplication(window).pack(side="top", fill="both", expand=True)
-    window.mainloop()
+    MainApplication().pack(side="top", fill="both", expand=True)
+
