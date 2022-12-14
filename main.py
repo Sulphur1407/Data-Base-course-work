@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-import datetime
 import mysql.connector
 
 months = ("січень", "лютий", "березень", "квітень", "травень", "червень",
@@ -11,18 +10,22 @@ years = (2020, 2021, 2022, 2023)
 
 class DataBase:
     def __init__(self):
-        self.__mydb = mysql.connector.connect(
+        self.mydb = mysql.connector.connect(
             host="localhost",
             user="root",
             passwd="abunaraze",
             database="db_sol"
         )
-        self.mycursor = self.__mydb.cursor()
+        self.mycursor = self.mydb.cursor()
 
     def get_sizes(self):
         self.mycursor.execute("SELECT DISTINCT size FROM Shoes_variant ORDER BY size")
         result = self.mycursor.fetchall()
         sizes = []
+
+        if not result:
+            return None
+
         for sequence in result:
             sizes.append(sequence[0])
         return sizes
@@ -31,28 +34,22 @@ class DataBase:
         self.mycursor.execute("SELECT DISTINCT fashion FROM Shoes_variant ORDER BY fashion")
         result = self.mycursor.fetchall()
         fashions = []
+
+        if not result:
+            return None
+
         for sequence in result:
             fashions.append(sequence[0])
         return fashions
 
-    @property
-    def mydb(self):
-        return self.__mydb
-
-    @mydb.setter
-    def mydb(self, value):
-        self.__mydb = value
-
 
 class MainApplication(tk.Frame):
     def __init__(self, *args, **kwargs):
-        parent = tk.Tk()
-        tk.Frame.__init__(self, parent, *args, **kwargs)
-        self.parent = parent
+        window = tk.Tk()
+        tk.Frame.__init__(self, window, *args, **kwargs)
 
         self.db = DataBase()
 
-        window = self.parent
         window.title("Курсова робота")
         window.geometry("1425x940")
 
@@ -67,6 +64,7 @@ class MainApplication(tk.Frame):
         tabControl.add(self.tab3, text="Отримати звіт")
         tabControl.add(self.tab4, text="Управління фасонами")
         tabControl.pack(expand=1, fill="both")
+
         #   TAB1
         ttk.Label(self.tab1, text="План диспетчирського відділу за:").place(x=20, y=20)
 
@@ -82,11 +80,7 @@ class MainApplication(tk.Frame):
         self.tab1_put_data_button = ttk.Button(self.tab1, text="Завантажити дані", command=self.tab1_put_data)
         self.tab1_put_data_button.place(x=645, y=18)
 
-        sizes = self.db.get_sizes()
-        fashions = self.db.get_fashions()
-
         self.create_table1()
-
 
         #   TAB2
         ttk.Label(self.tab2, text="Дані про брак за:").place(x=20, y=20)
@@ -105,23 +99,22 @@ class MainApplication(tk.Frame):
 
         self.create_table2()
 
-
         #   TAB3
         ttk.Label(self.tab3, text="Дані про брак за:").place(x=20, y=20)
+
         self.tab3_com_month = ttk.Combobox(self.tab3, values=months)
         self.tab3_com_month.place(x=130, y=20)
+
         self.tab3_com_year = ttk.Combobox(self.tab3, values=years)
         self.tab3_com_year.place(x=290, y=20)
+
         self.tab3_get_data_button = ttk.Button(self.tab3, text="Отримати звіт", command=self.tab3_get_report)
         self.tab3_get_data_button.place(x=450, y=18)
 
         self.create_table3()
 
-
-
         #  TAB4
         self.create_frame4()
-
 
         window.mainloop()
 
@@ -157,24 +150,21 @@ class MainApplication(tk.Frame):
         fashions = self.db.get_fashions()
 
         #  Фрейм для таблиці
-        tab1_table = tk.Frame(self.tab1)
-        self.tab1_table_frame = tab1_table
-        tab1_table.pack
-        tab1_table.place(x=0, y=50)
+        self.tab1_table_frame = tk.Frame(self.tab1)
+        self.tab1_table_frame.place(x=0, y=50)
 
-        # Table:
         self.tab1_table = []
         for i in range(len(fashions) + 1):
             cols = []
             for j in range(len(sizes) + 1):
                 if i == 0 and j == 0:
-                    tk.Label(tab1_table, text="Фасон").grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab1_table_frame, text="Фасон").grid(row=i, column=j, sticky=tk.NSEW)
                 elif i == 0:
-                    tk.Label(tab1_table, text=sizes[j - 1]).grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab1_table_frame, text=sizes[j - 1]).grid(row=i, column=j, sticky=tk.NSEW)
                 elif j == 0:
-                    tk.Label(tab1_table, text=fashions[i - 1]).grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab1_table_frame, text=fashions[i - 1]).grid(row=i, column=j, sticky=tk.NSEW)
                 else:
-                    e = tk.Entry(tab1_table, relief=tk.RIDGE)
+                    e = tk.Entry(self.tab1_table_frame, relief=tk.RIDGE)
                     e.grid(row=i, column=j, sticky=tk.NSEW)
                     cols.append(e)
             if i:
@@ -185,24 +175,21 @@ class MainApplication(tk.Frame):
         fashions = self.db.get_fashions()
 
         #  Фрейм для таблиці
-        tab2_table = tk.Frame(self.tab2)
-        tab2_table.pack
-        self.tab2_table_frame = tab2_table
-        tab2_table.place(x=0, y=50)
+        self.tab2_table_frame = tk.Frame(self.tab2)
+        self.tab2_table_frame.place(x=0, y=50)
 
-        # Table:
         self.tab2_table = []
         for i in range(len(fashions) + 1):
             cols = []
             for j in range(len(sizes) + 1):
                 if i == 0 and j == 0:
-                    tk.Label(tab2_table, text="Фасон").grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab2_table_frame, text="Фасон").grid(row=i, column=j, sticky=tk.NSEW)
                 elif i == 0:
-                    tk.Label(tab2_table, text=sizes[j - 1]).grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab2_table_frame, text=sizes[j - 1]).grid(row=i, column=j, sticky=tk.NSEW)
                 elif j == 0:
-                    tk.Label(tab2_table, text=fashions[i - 1]).grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab2_table_frame, text=fashions[i - 1]).grid(row=i, column=j, sticky=tk.NSEW)
                 else:
-                    e = tk.Entry(tab2_table, relief=tk.RIDGE)
+                    e = tk.Entry(self.tab2_table_frame, relief=tk.RIDGE)
                     e.grid(row=i, column=j, sticky=tk.NSEW)
                     cols.append(e)
             if i:
@@ -213,23 +200,21 @@ class MainApplication(tk.Frame):
         fashions = self.db.get_fashions()
 
         #  Фрейм для таблиці
-        tab3_table = tk.Frame(self.tab3)
-        tab3_table.pack
-        self.tab3_table_frame = tab3_table
-        tab3_table.place(x=0, y=50)
-        # Table:
+        self.tab3_table_frame = tk.Frame(self.tab3)
+        self.tab3_table_frame.place(x=0, y=50)
+
         self.tab3_table = []
         for i in range(len(fashions) + 1):
             cols = []
             for j in range(len(sizes) + 1):
                 if i == 0 and j == 0:
-                    tk.Label(tab3_table, text="Фасон").grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab3_table_frame, text="Фасон").grid(row=i, column=j, sticky=tk.NSEW)
                 elif i == 0:
-                    tk.Label(tab3_table, text=sizes[j - 1]).grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab3_table_frame, text=sizes[j - 1]).grid(row=i, column=j, sticky=tk.NSEW)
                 elif j == 0:
-                    tk.Label(tab3_table, text=fashions[i - 1]).grid(row=i, column=j, sticky=tk.NSEW)
+                    tk.Label(self.tab3_table_frame, text=fashions[i - 1]).grid(row=i, column=j, sticky=tk.NSEW)
                 else:
-                    e = tk.Label(tab3_table, relief=tk.RIDGE, width=17, height=1)
+                    e = tk.Label(self.tab3_table_frame, relief=tk.RIDGE, width=17, height=1)
                     e.grid(row=i, column=j, sticky=tk.NSEW)
                     cols.append(e)
             if i:
@@ -238,25 +223,29 @@ class MainApplication(tk.Frame):
     def create_frame4(self):
         fashions = self.db.get_fashions()
 
-        #  TAB4
+
         ttk.Label(self.tab4, text="Додати фасон:").place(x=20, y=20)
+
         self.tab4_entry_fashion_add = tk.Entry(self.tab4, relief=tk.RIDGE, width=23)
         self.tab4_entry_fashion_add.place(x=140, y=20)
+
         self.tab4_button_fashion_add = ttk.Button(self.tab4, text="Додати фасон", command=self.tab4_add_fashion)
         self.tab4_button_fashion_add.place(x=290, y=18)
 
+
         ttk.Label(self.tab4, text="Видалити фасон:").place(x=20, y=60)
+
         self.tab4_com_fashion = ttk.Combobox(self.tab4, values=fashions)
         self.tab4_com_fashion.place(x=140, y=60)
+
         self.tab4_get_data_button = ttk.Button(self.tab4, text="Видалити фасон", command=self.tab4_delete_fashion)
         self.tab4_get_data_button.place(x=290, y=58)
 
     def tab1_get_data(self):
-
-
         if not self.tab1_com_month.get():
             messagebox.showerror("Помилка!", "Ви не вказали місяць!")
             return None
+
         if not self.tab1_com_year.get():
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
@@ -274,12 +263,12 @@ class MainApplication(tk.Frame):
         for i in range(len(fashions)):
             for j in range(len(sizes)):
                 GetNumberFormula = """SELECT number
-                                          FROM plan_db
-                                          JOIN shoes_variant as sv
-                                              USING(id_shoes_variant)
-                                          WHERE sv.fashion = %s and sv.size = %s
-                                            and MONTH(data) = %s and YEAR(data) = %s
-                    """
+                                      FROM plan_db
+                                      JOIN shoes_variant as sv
+                                          USING(id_shoes_variant)
+                                      WHERE sv.fashion = %s and sv.size = %s
+                                        and MONTH(data) = %s and YEAR(data) = %s
+                                    """
                 self.db.mycursor.execute(GetNumberFormula, (fashions[i], sizes[j], month, year))
                 result = self.db.mycursor.fetchone()
                 if result:
@@ -294,6 +283,7 @@ class MainApplication(tk.Frame):
         if not self.tab1_com_month.get():
             messagebox.showerror("Помилка!", "Ви не вказали місяць!")
             return None
+
         if not self.tab1_com_year.get():
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
@@ -307,7 +297,6 @@ class MainApplication(tk.Frame):
         for i in range(len(fashions)):
             for j in range(len(sizes)):
                 if self.tab1_table[i][j].get():
-
                     try:
                         value = int(self.tab1_table[i][j].get())
                     except ValueError:
@@ -321,15 +310,7 @@ class MainApplication(tk.Frame):
                         messagebox.showerror("Помилка!", "Мінімальна кількість 0!")
                         return None
 
-                    GetNumberFormula = """SELECT number
-                                          FROM plan_db
-                                          JOIN shoes_variant as sv
-                                              USING(id_shoes_variant)
-                                          WHERE sv.fashion = %s and sv.size = %s
-                                            and MONTH(data) = %s and YEAR(data) = %s
-                                        """
-
-                    self.db.mycursor.execute(GetNumberFormula, (fashions[i], sizes[j], month, year))
+                    self.db.mycursor.execute(self.GetNumberFormula, (fashions[i], sizes[j], month, year))
                     result = self.db.mycursor.fetchone()
 
                     if result:
@@ -339,7 +320,7 @@ class MainApplication(tk.Frame):
                                           SET number = %s
                                           WHERE sv.fashion = %s and sv.size = %s
                                             and MONTH(data) = %s and YEAR(data) = %s
-                                        """
+                                          """
 
                         self.db.mycursor.execute(UpdateNumber, (value, fashions[i], sizes[j], month, year))
                         self.db.mydb.commit()
@@ -348,25 +329,27 @@ class MainApplication(tk.Frame):
                         date = str(year) + "-" + str(month) + "-1"
 
                         GetIdFormula = """SELECT id_shoes_variant
-                                          FROM shoes_variant
-                                          WHERE fashion = %s and size = %s"""
+                                               FROM shoes_variant
+                                               WHERE fashion = %s and size = %s
+                                            """
 
                         self.db.mycursor.execute(GetIdFormula, (fashions[i], sizes[j]))
 
                         id_shoes_variant = self.db.mycursor.fetchone()[0]
 
-                        UpdateNumber = """INSERT INTO plan_db
-                                          VALUES(DEFAULT, %s, %s, %s)"""
+                        InsertNumber = """INSERT INTO plan_db
+                                               VALUES(DEFAULT, %s, %s, %s)
+                                            """
 
-                        self.db.mycursor.execute(UpdateNumber, (value, date, id_shoes_variant))
+                        self.db.mycursor.execute(InsertNumber, (value, date, id_shoes_variant))
                         self.db.mydb.commit()
 
     #  TAB2 Buttons
     def tab2_get_data(self):
-
         if not self.tab2_com_month.get():
             messagebox.showerror("Помилка!", "Ви не вказали місяць!")
             return None
+
         if not self.tab2_com_year.get():
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
@@ -384,16 +367,18 @@ class MainApplication(tk.Frame):
         for i in range(len(fashions)):
             for j in range(len(sizes)):
                 GetNumberOfDefectiveFormula = """SELECT number_of_defective
-                                                     FROM accounting_for_defective_products
-                                                     JOIN plan_db as pdb
-                                                         USING(id_Plan_DB)
-                                                     JOIN shoes_variant as sv
-                                                          USING(id_shoes_variant)
-                                                     WHERE sv.fashion = %s and sv.size = %s
-                                                       and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
-                    """
+                                                 FROM accounting_for_defective_products
+                                                 JOIN plan_db as pdb
+                                                     USING(id_Plan_DB)
+                                                 JOIN shoes_variant as sv
+                                                      USING(id_shoes_variant)
+                                                 WHERE sv.fashion = %s and sv.size = %s
+                                                   and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                              """
+
                 self.db.mycursor.execute(GetNumberOfDefectiveFormula, (fashions[i], sizes[j], month, year))
                 result = self.db.mycursor.fetchone()
+
                 if result:
                     ind = False
                     self.tab2_table[i][j].insert(0, result[0])
@@ -405,6 +390,7 @@ class MainApplication(tk.Frame):
         if not self.tab2_com_month.get():
             messagebox.showerror("Помилка!", "Ви не вказали місяць!")
             return None
+
         if not self.tab2_com_year.get():
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
@@ -438,28 +424,30 @@ class MainApplication(tk.Frame):
                                               USING(id_shoes_variant)
                                           WHERE sv.fashion = %s and sv.size = %s
                                             and MONTH(data) = %s and YEAR(data) = %s
-                                          """
+                                       """
+
                     self.db.mycursor.execute(GetNumberFormula, (fashions[i], sizes[j], month, year))
                     result = self.db.mycursor.fetchone()
 
                     if result:
                         if value > result[0]:
-                            messagebox.showerror("Помилка!",
-                                                 "Бракованих виробів не може бути більше, ніж загальна кількість виробів!")
+                            messagebox.showerror("Помилка!", "Бракованих виробів не може бути більше, ніж загальна "
+                                                             "кількість виробів!")
                             return None
+
                     else:
                         messagebox.showerror("Помилка!", "Ви намагаєтесь ввести брак для невиготовленої продукції!")
                         return None
 
                     GetNumberOfDevective = """SELECT number_of_defective
-                                          FROM accounting_for_defective_products
-                                          JOIN plan_db as pdb
-                                              USING(id_Plan_DB)
-                                          JOIN shoes_variant as sv
-                                               USING(id_shoes_variant)
-                                          WHERE sv.fashion = %s and sv.size = %s
-                                            and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
-                                        """
+                                              FROM accounting_for_defective_products
+                                              JOIN plan_db as pdb
+                                                  USING(id_Plan_DB)
+                                              JOIN shoes_variant as sv
+                                                   USING(id_shoes_variant)
+                                              WHERE sv.fashion = %s and sv.size = %s
+                                                and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                           """
 
                     self.db.mycursor.execute(GetNumberOfDevective, (fashions[i], sizes[j], month, year))
                     result = self.db.mycursor.fetchone()
@@ -474,7 +462,7 @@ class MainApplication(tk.Frame):
                                                      SET number_of_defective = %s
                                                      WHERE sv.fashion = %s and sv.size = %s
                                                        and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
-                                                     """
+                                                  """
 
                         self.db.mycursor.execute(UpdateNumberOfDevective, (value, fashions[i], sizes[j], month, year))
                         self.db.mydb.commit()
@@ -503,6 +491,7 @@ class MainApplication(tk.Frame):
         if not self.tab3_com_month.get():
             messagebox.showerror("Помилка!", "Ви не вказали місяць!")
             return None
+
         if not self.tab3_com_year.get():
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
@@ -525,19 +514,20 @@ class MainApplication(tk.Frame):
                                           USING(id_shoes_variant)
                                       WHERE sv.fashion = %s and sv.size = %s
                                         and MONTH(data) = %s and YEAR(data) = %s
-                                                          """
+                                   """
                 self.db.mycursor.execute(GetNumberFormula, (fashions[i], sizes[j], month, year))
                 number = self.db.mycursor.fetchone()
 
                 GetNumberOfDefectiveFormula = """SELECT number_of_defective
-                                                FROM accounting_for_defective_products
-                                                JOIN plan_db as pdb
-                                                    USING(id_Plan_DB)
-                                                JOIN shoes_variant as sv
-                                                     USING(id_shoes_variant)
-                                                WHERE sv.fashion = %s and sv.size = %s
-                                                  and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
-                            """
+                                                 FROM accounting_for_defective_products
+                                                 JOIN plan_db as pdb
+                                                     USING(id_Plan_DB)
+                                                 JOIN shoes_variant as sv
+                                                      USING(id_shoes_variant)
+                                                 WHERE sv.fashion = %s and sv.size = %s
+                                                   and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                              """
+
                 self.db.mycursor.execute(GetNumberOfDefectiveFormula, (fashions[i], sizes[j], month, year))
                 number_def = self.db.mycursor.fetchone()
 
@@ -569,6 +559,7 @@ class MainApplication(tk.Frame):
         AddFashion = """INSERT INTO shoes_variant
                         VALUES (DEFAULT, %s, %s)
                         """
+
         for i in range(35, 46):
             self.db.mycursor.execute(AddFashion, (fashion, i))
 
@@ -587,6 +578,7 @@ class MainApplication(tk.Frame):
         DeleteFashion = """DELETE FROM shoes_variant
                            where fashion = %s
         """
+
         try:
             self.db.mycursor.execute(DeleteFashion, (fashion,))
             self.db.mydb.commit()
@@ -598,4 +590,3 @@ class MainApplication(tk.Frame):
 
 if __name__ == "__main__":
     MainApplication().pack(side="top", fill="both", expand=True)
-
