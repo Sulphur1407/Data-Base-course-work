@@ -541,7 +541,10 @@ class MainApplication(tk.Frame):
 
                 if number and number_def:
                     ind = False
-                    stat = f"{number[0]}/{number_def[0]} Брак: {round(number_def[0] / number[0] * 100, 1)}%"
+                    if number[0]:
+                        stat = f"{number[0]}/{number_def[0]} Брак: {round(number_def[0] / number[0] * 100, 1)}%"
+                    else:
+                        stat = "Не вироблялось"
                     self.tab3_table[i][j].config(text=stat)
                 else:
                     self.tab3_table[i][j].config(text="----------")
