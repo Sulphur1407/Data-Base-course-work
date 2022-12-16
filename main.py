@@ -310,7 +310,15 @@ class MainApplication(tk.Frame):
                         messagebox.showerror("Помилка!", "Мінімальна кількість 0!")
                         return None
 
-                    self.db.mycursor.execute(self.GetNumberFormula, (fashions[i], sizes[j], month, year))
+                    GetNumberFormula = """SELECT number
+                                          FROM plan_db
+                                          JOIN shoes_variant as sv
+                                              USING(id_shoes_variant)
+                                          WHERE sv.fashion = %s and sv.size = %s
+                                            and MONTH(data) = %s and YEAR(data) = %s
+                                       """
+
+                    self.db.mycursor.execute(GetNumberFormula, (fashions[i], sizes[j], month, year))
                     result = self.db.mycursor.fetchone()
 
                     if result:
