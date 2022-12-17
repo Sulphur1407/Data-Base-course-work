@@ -17,6 +17,7 @@ class DataBase:
             database="db_sol"
         )
         self.mycursor = self.mydb.cursor()
+        self.delete_nulls()
 
     def get_sizes(self):
         self.mycursor.execute("SELECT DISTINCT size FROM Shoes_variant ORDER BY size")
@@ -41,6 +42,23 @@ class DataBase:
         for sequence in result:
             fashions.append(sequence[0])
         return fashions
+
+    def get_type_defect(self):
+        self.mycursor.execute("SELECT DISTINCT type_of_defect FROM type_of_defect")
+        result = self.mycursor.fetchall()
+        defects = []
+
+        if not result:
+            return None
+
+        for sequence in result:
+            defects.append(sequence[0])
+        return defects
+
+    def delete_nulls(self):
+        self.mycursor.execute("DELETE FROM plan_db WHERE number = 0")
+        self.mycursor.execute("DELETE FROM accounting_for_defective_products WHERE number_of_defective = 0")
+        self.mydb.commit()
 
 
 class MainApplication(tk.Frame):
@@ -91,11 +109,18 @@ class MainApplication(tk.Frame):
         self.tab2_com_year = ttk.Combobox(self.tab2, values=years)
         self.tab2_com_year.place(x=290, y=20)
 
+        defects = self.db.get_type_defect()
+
+        ttk.Label(self.tab2, text="Тип браку:").place(x=450, y=20)
+
+        self.tab2_com_defect = ttk.Combobox(self.tab2, values=defects)
+        self.tab2_com_defect.place(x=530, y=20)
+
         self.tab2_get_data_button = ttk.Button(self.tab2, text="Отримати дані", command=self.tab2_get_data)
-        self.tab2_get_data_button.place(x=450, y=18)
+        self.tab2_get_data_button.place(x=690, y=18)
 
         self.tab2_put_data_button = ttk.Button(self.tab2, text="Завантажити дані", command=self.tab2_put_data)
-        self.tab2_put_data_button.place(x=555, y=18)
+        self.tab2_put_data_button.place(x=800, y=18)
 
         self.create_table2()
 
@@ -119,6 +144,8 @@ class MainApplication(tk.Frame):
         window.mainloop()
 
     def refresh(self):
+        self.db.delete_nulls()
+
         for child in self.tab1_table_frame.winfo_children():
             child.destroy()
         self.create_table1()
@@ -136,6 +163,7 @@ class MainApplication(tk.Frame):
         self.create_frame4()
 
     def clear_table(self):
+        self.db.delete_nulls()
         sizes = self.db.get_sizes()
         fashions = self.db.get_fashions()
 
@@ -144,6 +172,28 @@ class MainApplication(tk.Frame):
                 self.tab1_table[i][j].delete(0, 100)
                 self.tab2_table[i][j].delete(0, 100)
                 self.tab3_table[i][j].config(text="")
+
+    def max_defective(self, fashion, size, month, year):
+        max_defect = 0
+        for type_of_defect in self.db.get_type_defect():
+            GetNumberOfDefectiveFormula = """SELECT number_of_defective
+                                             FROM accounting_for_defective_products
+                                             JOIN plan_db as pdb
+                                                 USING(id_Plan_DB)
+                                             JOIN shoes_variant as sv
+                                                  USING(id_shoes_variant)
+                                             JOIN type_of_defect tod
+                                                USING(id_type_of_defect)
+                                             WHERE sv.fashion = %s and sv.size = %s
+                                               and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s 
+                                               and tod.type_of_defect = %s
+                                          """
+
+            self.db.mycursor.execute(GetNumberOfDefectiveFormula, (fashion, size, month, year, type_of_defect))
+            result = self.db.mycursor.fetchone()
+            if result and result[0] > max_defect:
+                max_defect = result[0]
+        return max_defect
 
     def create_table1(self):
         sizes = self.db.get_sizes()
@@ -322,6 +372,10 @@ class MainApplication(tk.Frame):
                     result = self.db.mycursor.fetchone()
 
                     if result:
+                        if value < self.max_defective(fashions[i], sizes[j], month, year):
+                            messagebox.showerror("Помилка!", "При редагуванні кількість виготовленого буде більша за "
+                                                             "кількість виготовленого!")
+                            return None
                         UpdateNumber = """UPDATE plan_db
                                           JOIN shoes_variant as sv
                                               USING(id_shoes_variant)
@@ -362,8 +416,13 @@ class MainApplication(tk.Frame):
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
 
+        if not self.tab2_com_defect.get():
+            messagebox.showerror("Помилка!", "Ви не вказали тип дефекту!")
+            return None
+
         month = months.index(self.tab2_com_month.get()) + 1
         year = self.tab2_com_year.get()
+        type_of_defect = self.tab2_com_defect.get()
 
         sizes = self.db.get_sizes()
         fashions = self.db.get_fashions()
@@ -380,11 +439,14 @@ class MainApplication(tk.Frame):
                                                      USING(id_Plan_DB)
                                                  JOIN shoes_variant as sv
                                                       USING(id_shoes_variant)
+                                                 JOIN type_of_defect tod
+                                                    USING(id_type_of_defect)
                                                  WHERE sv.fashion = %s and sv.size = %s
-                                                   and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                                   and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s 
+                                                   and tod.type_of_defect = %s
                                               """
 
-                self.db.mycursor.execute(GetNumberOfDefectiveFormula, (fashions[i], sizes[j], month, year))
+                self.db.mycursor.execute(GetNumberOfDefectiveFormula, (fashions[i], sizes[j], month, year, type_of_defect))
                 result = self.db.mycursor.fetchone()
 
                 if result:
@@ -403,8 +465,13 @@ class MainApplication(tk.Frame):
             messagebox.showerror("Помилка!", "Ви не вказали рік!")
             return None
 
+        if not self.tab2_com_defect.get():
+            messagebox.showerror("Помилка!", "Ви не вказали тип дефекту!")
+            return None
+
         month = months.index(self.tab2_com_month.get()) + 1
         year = self.tab2_com_year.get()
+        type_of_defect = self.tab2_com_defect.get()
 
         sizes = self.db.get_sizes()
         fashions = self.db.get_fashions()
@@ -453,11 +520,14 @@ class MainApplication(tk.Frame):
                                                   USING(id_Plan_DB)
                                               JOIN shoes_variant as sv
                                                    USING(id_shoes_variant)
+                                              JOIN type_of_defect tod
+                                                    USING(id_type_of_defect)
                                               WHERE sv.fashion = %s and sv.size = %s
                                                 and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                                and tod.type_of_defect = %s
                                            """
 
-                    self.db.mycursor.execute(GetNumberOfDevective, (fashions[i], sizes[j], month, year))
+                    self.db.mycursor.execute(GetNumberOfDevective, (fashions[i], sizes[j], month, year, type_of_defect))
                     result = self.db.mycursor.fetchone()
 
                     if result:
@@ -467,12 +537,15 @@ class MainApplication(tk.Frame):
                                                          USING(id_Plan_DB)
                                                      JOIN shoes_variant as sv
                                                          USING(id_shoes_variant)
+                                                     JOIN type_of_defect tod
+                                                         USING(id_type_of_defect)
                                                      SET number_of_defective = %s
                                                      WHERE sv.fashion = %s and sv.size = %s
                                                        and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                                       and tod.type_of_defect = %s
                                                   """
 
-                        self.db.mycursor.execute(UpdateNumberOfDevective, (value, fashions[i], sizes[j], month, year))
+                        self.db.mycursor.execute(UpdateNumberOfDevective, (value, fashions[i], sizes[j], month, year, type_of_defect))
                         self.db.mydb.commit()
 
                     else:
@@ -489,10 +562,18 @@ class MainApplication(tk.Frame):
 
                         id_Plan_DB = self.db.mycursor.fetchone()[0]
 
-                        InsertDefective = """INSERT INTO accounting_for_defective_products
-                                             VALUES(DEFAULT, %s, 1, %s)"""
+                        GetIdOfDefect = """SELECT id_type_of_defect
+                                           FROM type_of_defect
+                                           WHERE type_of_defect = %s
+                                        """
+                        self.db.mycursor.execute(GetIdOfDefect, (type_of_defect,))
 
-                        self.db.mycursor.execute(InsertDefective, (value, id_Plan_DB))
+                        id_type_of_defect = self.db.mycursor.fetchone()[0]
+
+                        InsertDefective = """INSERT INTO accounting_for_defective_products
+                                             VALUES(DEFAULT, %s, %s, %s)"""
+
+                        self.db.mycursor.execute(InsertDefective, (value, id_type_of_defect, id_Plan_DB))
                         self.db.mydb.commit()
 
     def tab3_get_report(self):
@@ -526,25 +607,30 @@ class MainApplication(tk.Frame):
                 self.db.mycursor.execute(GetNumberFormula, (fashions[i], sizes[j], month, year))
                 number = self.db.mycursor.fetchone()
 
-                GetNumberOfDefectiveFormula = """SELECT number_of_defective
-                                                 FROM accounting_for_defective_products
-                                                 JOIN plan_db as pdb
-                                                     USING(id_Plan_DB)
-                                                 JOIN shoes_variant as sv
-                                                      USING(id_shoes_variant)
-                                                 WHERE sv.fashion = %s and sv.size = %s
-                                                   and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
-                                              """
-
-                self.db.mycursor.execute(GetNumberOfDefectiveFormula, (fashions[i], sizes[j], month, year))
-                number_def = self.db.mycursor.fetchone()
-
-                if number and number_def:
-                    ind = False
-                    if number[0]:
-                        stat = f"{number[0]}/{number_def[0]} Брак: {round(number_def[0] / number[0] * 100, 1)}%"
+                GetNumberOfDevective = """SELECT number_of_defective
+                                          FROM accounting_for_defective_products
+                                          JOIN plan_db as pdb
+                                              USING(id_Plan_DB)
+                                          JOIN shoes_variant as sv
+                                               USING(id_shoes_variant)
+                                          JOIN type_of_defect tod
+                                                USING(id_type_of_defect)
+                                          WHERE sv.fashion = %s and sv.size = %s
+                                            and MONTH(pdb.data) = %s and YEAR(pdb.data) = %s
+                                            and tod.type_of_defect = %s
+                                            """
+                number_def = []
+                for type_of_defect in self.db.get_type_defect():
+                    self.db.mycursor.execute(GetNumberOfDevective, (fashions[i], sizes[j], month, year, type_of_defect))
+                    number_defected = self.db.mycursor.fetchone()
+                    if number_defected:
+                        number_def.append(number_defected)
                     else:
-                        stat = "Не вироблялось"
+                        number_def.append("-")
+
+                if number:
+                    ind = False
+                    stat = f"В: {number[0]} | Р:{number_def[0][0]} С:{number_def[1][0]} Т:{number_def[2][0]}"
                     self.tab3_table[i][j].config(text=stat)
                 else:
                     self.tab3_table[i][j].config(text="----------")
