@@ -666,6 +666,8 @@ class MainApplication(tk.Frame):
         self.refresh()
 
     def tab4_delete_fashion(self):
+        self.db.delete_nulls()
+
         if not self.tab4_com_fashion.get():
             messagebox.showerror("Помилка!", "Ви не вказали модель для видалення!")
             return None
